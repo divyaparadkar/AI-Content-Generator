@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>NexusAI Studio - AI Content Generator with RAG</title>
+  <meta name="description" content="State-of-the-art AI-powered content generator producing high-quality blog posts, social captions, and summaries with Retrieval-Augmented Generation (RAG).">
+  <link rel="stylesheet" href="/static/css/style.css">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220%22%200%22%20100%22%20100%22><text y=%22.9em%22 font-size=%2290%22>⚡</text></svg>">
+</head>
+<body>
+
+  <!-- Sticky Navbar -->
+  <header class="navbar" role="banner">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">✨</div>
+      <div class="brand-text">
+        <h1>NexusAI Studio</h1>
+        <div class="brand-tagline">Autonomous Content Generator & RAG Knowledge Engine</div>
+      </div>
+    </div>
+
+    <div class="nav-actions">
+      <span class="badge-tag accent" id="navModelBadge">Offline RAG Synthesis</span>
+      <button class="btn btn-secondary btn-sm" id="btnOpenRag" title="Manage RAG Knowledge Base">
+        <span>📚 RAG Base</span>
+        <span class="badge-tag" id="navRagCountBadge" style="margin-left: 0.25rem;">3 docs</span>
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btnOpenHistory" title="View Generation History">
+        <span>🕒 History</span>
+      </button>
+      <button class="btn btn-secondary btn-sm" id="btnOpenSettings" title="Configure AI Models & Keys">
+        <span>⚙️ Settings</span>
+      </button>
+      <button class="btn-icon" id="btnThemeToggle" title="Toggle Dark/Light Mode" aria-label="Toggle theme">
+        🌓
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Application Layout -->
+  <main class="app-container" role="main">
+
+    <!-- Left Column: Generator Studio Control Panel -->
+    <section class="panel" aria-label="Generation Controls">
+      <div class="panel-header">
+        <h2 class="panel-title">
+          <span>🎛️</span> Content Studio
+        </h2>
+        <span class="badge-tag" id="topicCharCounter">0 characters</span>
+      </div>
+
+      <!-- Quick Preset Chips -->
+      <div class="presets-container">
+        <span class="presets-label">⚡ Quick Sample Presets (1-Click Test)</span>
+        <div class="preset-pills" id="presetPills">
+          <!-- Dynamically populated via presets.js -->
+        </div>
+      </div>
+
+      <!-- Content Type Selector -->
+      <div class="form-group">
+        <label class="form-label" for="contentTypeGrid">
+          <span>Content Type</span>
+          <span class="sub">Select output format</span>
+        </label>
+        <div class="content-type-grid" id="contentTypeGrid">
+          <div class="content-type-card active" data-type="blog_post" id="typeCardBlogPost">
+            <div class="card-title"><span>📝</span> Blog Post</div>
+            <div class="card-desc">SEO-structured article with headings & takeaways</div>
+          </div>
+          <div class="content-type-card" data-type="social_caption" id="typeCardSocial">
+            <div class="card-title"><span>📱</span> Social Caption</div>
+            <div class="card-desc">Scroll-stopping viral hook, bullets & hashtags</div>
+          </div>
+          <div class="content-type-card" data-type="summary" id="typeCardSummary">
+            <div class="card-title"><span>📊</span> Text Summary</div>
+            <div class="card-desc">High-signal executive briefing & key findings</div>
+          </div>
+          <div class="content-type-card" data-type="email_newsletter" id="typeCardEmail">
+            <div class="card-title"><span>💌</span> Newsletter</div>
+            <div class="card-desc">Subject lines, conversational story & CTA</div>
+          </div>
+          <div class="content-type-card" data-type="linkedin_post" id="typeCardLinkedIn" style="grid-column: span 2;">
+            <div class="card-title"><span>💼</span> LinkedIn Thought Leadership</div>
+            <div class="card-desc">Single-line hooks, actionable framework & discussion prompt</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Topic / Prompt Input -->
+      <div class="form-group">
+        <label class="form-label" for="topicInput">
+          <span style="display:flex; align-items:center; gap:0.5rem;">
+            <span>Topic or User Prompt <span style="color:var(--danger)">*</span></span>
+            <button type="button" class="btn btn-secondary btn-sm" id="btnVoiceInput" style="padding:0.2rem 0.55rem; font-size:0.75rem;" title="Speak prompt using Voice AI">
+              <span>🎙️</span> <span>Voice Prompt</span>
+            </button>
+          </span>
+          <span class="sub" id="voiceInputStatus">Enter ↵ to generate (Shift+Enter for newline)</span>
+        </label>
+        <div class="input-with-arrow-container">
+          <textarea
+            id="topicInput"
+            placeholder="e.g. Why Retrieval-Augmented Generation (RAG) is transforming AI in 2026..."
+            rows="3"
+            required
+          ></textarea>
+          <button type="button" class="btn-arrow-submit" id="btnSendArrow" title="Generate Content (Enter ↵)">
+            <span>➔</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- JAV Fast Decision HUD -->
+      <div class="jav-decision-hud" id="javDecisionHud" style="display: none;">
+        <div class="jav-hud-header">
+          <span class="jav-hud-title">
+            <span>⚡</span> JAV System-1 Fast Decision Matrix
+          </span>
+          <span class="badge-tag" id="javHudLatency" style="font-size:0.7rem; color:var(--accent-tertiary);">
+            ⚡ JAV Decision: 2.1 ms
+          </span>
+        </div>
+        <div class="jav-hud-grid">
+          <div class="jav-hud-metric">
+            <span class="jav-metric-label">RAG Grounding</span>
+            <span class="jav-metric-val" id="javHudRagNeed">Evaluating...</span>
+          </div>
+          <div class="jav-hud-metric">
+            <span class="jav-metric-label">Recommended Format</span>
+            <span class="jav-metric-val" id="javHudTypeRec">Evaluating...</span>
+          </div>
+          <div class="jav-hud-metric">
+            <span class="jav-metric-label">Recommended Tone</span>
+            <span class="jav-metric-val" id="javHudToneRec">Evaluating...</span>
+          </div>
+          <div class="jav-hud-metric">
+            <span class="jav-metric-label">Complexity Score</span>
+            <span class="jav-metric-val" id="javHudComplexity">Evaluating...</span>
+          </div>
+        </div>
+        <button type="button" class="btn btn-secondary btn-sm" id="btnApplyJavRecs" style="margin-top:0.25rem;">
+          ⚡ Auto-Align with JAV Decision
+        </button>
+      </div>
+
+      <!-- Tone & Length Row -->
+      <div class="select-row">
+        <div class="form-group">
+          <label class="form-label" for="toneSelect">Tone</label>
+          <select id="toneSelect">
+            <option value="professional" selected>👔 Professional & Polished</option>
+            <option value="casual">☕ Casual & Conversational</option>
+            <option value="persuasive">🎯 Persuasive & Urgency-Driven</option>
+            <option value="humorous">😄 Witty & Humorous</option>
+            <option value="informative">📚 Informative & Educational</option>
+            <option value="inspirational">🚀 Inspirational & Motivating</option>
+            <option value="academic">🔬 Academic & Analytical</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="lengthSelect">Target Length</label>
+          <select id="lengthSelect">
+            <option value="short">⚡ Short (~200 words)</option>
+            <option value="medium" selected>📄 Medium (~500 words)</option>
+            <option value="long">📚 Long (~1,000 words)</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Target Audience -->
+      <div class="form-group">
+        <label class="form-label" for="targetAudience">Target Audience</label>
+        <input
+          type="text"
+          id="targetAudience"
+          placeholder="e.g. Software Engineers, Fitness Beginners, C-Suite Leaders..."
+          value="General Audience"
+        />
+      </div>
+
+      <!-- Additional Custom Instructions -->
+      <div class="form-group">
+        <label class="form-label" for="customInstructions">
+          <span>Custom Directives / Focus Points</span>
+          <span class="sub">Optional</span>
+        </label>
+        <input
+          type="text"
+          id="customInstructions"
+          placeholder="e.g. Focus on ROI metrics, include a 3-step action checklist..."
+        />
+      </div>
+
+      <!-- RAG Knowledge Base Toggle Box -->
+      <div class="rag-switch-box active" id="ragSwitchBox">
+        <div class="switch-header">
+          <div class="switch-label-group">
+            <span class="switch-title">
+              <span>🧠</span> Ground in RAG Knowledge Base
+            </span>
+            <span class="switch-desc" id="ragStatsDesc">
+              Automatically injects relevant chunks from indexed documents
+            </span>
+          </div>
+          <label class="switch" for="useRagToggle">
+            <input type="checkbox" id="useRagToggle" checked>
+            <span class="slider"></span>
+          </label>
+        </div>
+      </div>
+
+      <!-- Submit Button -->
+      <button class="btn btn-primary btn-generate" id="btnGenerate">
+        <span>✨ Generate Content</span>
+      </button>
+    </section>
+
+    <!-- Right Column: Output Studio & Workbench -->
+    <section class="output-studio" aria-label="Generated Output Studio">
+
+      <!-- Metrics & Action Bar -->
+      <div class="metrics-bar" role="toolbar" aria-label="Output Toolbar">
+        <div class="metrics-group">
+          <span class="metric-badge highlight" id="badgeModelStatus">READY</span>
+          <span class="metric-badge" id="badgeWordCount"><strong>0</strong> words</span>
+          <span class="metric-badge" id="badgeCharCount"><strong>0</strong> chars</span>
+          <span class="metric-badge" id="badgeReadTime">⏱️ <strong>0.0</strong> min read</span>
+          <span class="metric-badge" id="badgeReadLevel">🎯 <strong>Standard</strong></span>
+        </div>
+
+        <div class="output-actions">
+          <button class="btn btn-secondary btn-sm" id="btnVoiceReadAloud" title="Read content aloud with Voice AI Narration">
+            <span>🔊</span> <span>Listen AI</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btnCopy" title="Copy to clipboard">
+            <span>📋</span> <span>Copy</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btnRegenerate" title="Regenerate with current inputs">
+            <span>🔄</span> <span>Regenerate</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btnInspectPrompt" title="Inspect system prompt templates">
+            <span>🔍</span> <span>Prompt</span>
+          </button>
+          <button class="btn btn-secondary btn-sm" id="btnExport" title="Export markdown file">
+            <span>💾</span> <span>Export</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Output Card -->
+      <article class="output-card">
+        <div class="output-card-header">
+          <div class="tabs-nav" role="tablist">
+            <button class="tab-btn active" id="tabPreview" role="tab" aria-selected="true">
+              👁️ Formatted Preview
+            </button>
+            <button class="tab-btn" id="tabRaw" role="tab" aria-selected="false">
+              ✏️ Raw Markdown Source
+            </button>
+          </div>
+          <span class="badge-tag" style="font-size:0.75rem;">Live Editable</span>
+        </div>
+
+        <div class="output-body" id="outputBody">
+
+          <!-- Empty State -->
+          <div class="empty-state" id="emptyState">
+            <div class="empty-state-icon">✍️</div>
+            <h3>Your Generated Content Will Appear Here</h3>
+            <p>Select a content type, enter a topic or pick one of the quick sample presets above, then click <strong>Generate Content</strong>.</p>
+          </div>
+
+          <!-- Formatted Markdown Render -->
+          <div class="markdown-content" id="markdownPreview" style="display: none;"></div>
+
+          <!-- Raw Editable Textarea -->
+          <textarea id="rawContentEditor" style="display: none;" placeholder="Generated markdown content..."></textarea>
+
+          <!-- Loading Spinner Overlay -->
+          <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+            <div class="spinner"></div>
+            <div class="loading-text" id="loadingStatusText">Generating high quality content...</div>
+          </div>
+        </div>
+      </article>
+
+      <!-- JAV Quality & Constraint Verification Gate Card -->
+      <div class="jav-verification-card" id="javVerificationCard" style="display: none;">
+        <div class="citations-header">
+          <span class="citations-title" style="color:var(--accent-tertiary);">
+            <span>⚡</span> JAV Quality & Constraint Verification Gate
+          </span>
+          <span class="badge-tag" id="javVerifyLatency" style="color:var(--accent-primary); border-color:rgba(99,102,241,0.3);">
+            Verified in 1.4 ms
+          </span>
+        </div>
+        <div class="jav-verify-grid">
+          <div class="jav-hud-metric">
+            <span class="jav-metric-label">Overall Gate</span>
+            <span class="jav-metric-val" id="javVerifyOverall">96% Passed ✅</span>
+          </div>
+          <div class="jav-hud-metric">
+            <span class="jav-metric-label">Structure Compliance</span>
+            <span class="jav-metric-val" id="javVerifyStructure">98%</span>
+          </div>
+          <div class="jav-hud-metric">
+            <span class="jav-metric-label">Grounding Fidelity</span>
+            <span class="jav-metric-val" id="javVerifyGrounding">95%</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- RAG Citations & References Card -->
+      <div class="rag-citations-card" id="ragCitationsCard" style="display: none;">
+        <div class="citations-header">
+          <span class="citations-title">
+            <span>📚</span> Retrieved Grounding Knowledge (RAG Citations)
+          </span>
+          <span class="badge-tag" style="color:var(--success); border-color:rgba(16,185,129,0.3);">
+            Verified Sources
+          </span>
+        </div>
+        <div class="citations-grid" id="citationsList">
+          <!-- Citations injected dynamically -->
+        </div>
+      </div>
+
+      <!-- Interactive Output Refinement Toolbar -->
+      <div class="refine-toolbar" id="refineToolbar">
+        <div class="refine-header">
+          <span class="refine-title">
+            <span>🛠️</span> Interactive Output Refinement
+          </span>
+          <span class="badge-tag">Iterative Polish</span>
+        </div>
+
+        <div class="quick-refine-pills">
+          <div class="quick-refine-chip" data-refine="Make the opening hook 2x more punchy and bold">
+            ⚡ Punchier Hook
+          </div>
+          <div class="quick-refine-chip" data-refine="Condense and shorten by 30% while keeping key facts">
+            ✂️ Shorten & Tighten
+          </div>
+          <div class="quick-refine-chip" data-refine="Expand with additional actionable details, statistics, and examples">
+            📈 Expand Details
+          </div>
+          <div class="quick-refine-chip" data-refine="Convert the key takeaways into an actionable bulleted checklist">
+            📝 Add Bullet Checklist
+          </div>
+          <div class="quick-refine-chip" data-refine="Inject subtle humor, clever analogies, and witty remarks">
+            😄 Make Witty
+          </div>
+          <div class="quick-refine-chip" data-refine="Format with viral social media spacing, bolding, and tasteful emojis">
+            🔥 Add Viral Emojis
+          </div>
+        </div>
+
+        <div class="custom-refine-form">
+          <input
+            type="text"
+            class="custom-refine-input"
+            id="customRefineInput"
+            placeholder="Type custom refinement... (e.g. 'Add a section discussing privacy and security risks')"
+          />
+          <button class="btn btn-secondary btn-sm" id="btnCustomRefine">
+            <span>Polish & Refine</span>
+          </button>
+        </div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- RAG Knowledge Base Modal -->
+  <div class="modal-backdrop" id="modalRAG">
+    <div class="modal-content" style="max-width: 680px;">
+      <div class="modal-header">
+        <h2><span>📚</span> RAG Knowledge Base Manager</h2>
+        <button class="btn-icon modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.85rem; color:var(--text-secondary);">
+          Upload domain documents or add plain text snippets. The RAG pipeline automatically parses, chunks, and indexes them into the semantic vector store for instant factual grounding.
+        </p>
+
+        <!-- Dropzone -->
+        <div class="dropzone" id="ragDropzone">
+          <div class="dropzone-icon">📁</div>
+          <strong style="color:var(--text-primary); font-size:0.95rem;">Drag & drop your files here, or click to browse</strong>
+          <span style="font-size:0.75rem; color:var(--text-muted);">Supports PDF, TXT, Markdown (.md), CSV, JSON</span>
+          <input type="file" id="ragFileInput" style="display:none" accept=".pdf,.txt,.md,.markdown,.csv,.json">
+        </div>
+
+        <!-- Add Text Snippet -->
+        <form id="ragAddTextForm" style="display:flex; flex-direction:column; gap:0.5rem; margin-top:0.5rem;">
+          <input type="text" id="ragSnippetTitle" placeholder="Snippet Title (e.g. 'Company Brand Guidelines')" />
+          <textarea id="ragSnippetText" rows="3" placeholder="Paste custom knowledge text here..."></textarea>
+          <button type="submit" class="btn btn-secondary btn-sm" style="align-self:flex-end;">
+            + Index Snippet
+          </button>
+        </form>
+
+        <!-- Indexed Docs List -->
+        <div style="margin-top:0.5rem;">
+          <h4 style="font-size:0.88rem; margin-bottom:0.5rem;">Currently Indexed Documents</h4>
+          <div id="ragDocsList" style="display:flex; flex-direction:column; gap:0.5rem; max-height:200px; overflow-y:auto;">
+            <!-- Rendered by rag_ui.js -->
+          </div>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary btn-sm" id="btnResetRag">↺ Reset to Defaults</button>
+        <button class="btn btn-primary btn-sm modal-close">Done</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings / Model Config Modal -->
+  <div class="modal-backdrop" id="modalSettings">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><span>⚙️</span> AI Model & API Configuration</h2>
+        <button class="btn-icon modal-close">✕</button>
+      </div>
+      <form id="settingsForm">
+        <div class="modal-body">
+          <div class="form-group">
+            <label class="form-label" for="settingsProvider">AI Backend Provider</label>
+            <select id="settingsProvider">
+              <option value="offline" selected>⚡ Offline Smart Synthesizer (Works without API key)</option>
+              <option value="openai">🤖 OpenAI (GPT-4o / GPT-4o-mini)</option>
+              <option value="gemini">✨ Google Gemini (1.5 Flash / 2.0 Flash)</option>
+              <option value="huggingface">🤗 Hugging Face Inference API</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingsApiKey">
+              <span>API Key / Token</span>
+              <span class="sub">Stored locally in your browser</span>
+            </label>
+            <input
+              type="text"
+              id="settingsApiKey"
+              placeholder="sk-... or AIza... or hf_..."
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingsModel">
+              <span>Custom Model ID (Optional)</span>
+              <span class="sub">Leave blank for default</span>
+            </label>
+            <input
+              type="text"
+              id="settingsModel"
+              placeholder="e.g. gpt-4o-mini or gemini-1.5-flash"
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="settingsTemp">
+              <span>Creativity / Temperature: <strong id="tempValueDisplay">0.7</strong></span>
+            </label>
+            <input type="range" id="settingsTemp" min="0.0" max="1.0" step="0.05" value="0.7" />
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary btn-sm modal-close">Cancel</button>
+          <button type="submit" class="btn btn-primary btn-sm">Save Configuration</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Prompt Inspector Modal -->
+  <div class="modal-backdrop" id="modalPromptInspector">
+    <div class="modal-content" style="max-width:720px;">
+      <div class="modal-header">
+        <h2><span>🔍</span> Prompt Engineering Inspector</h2>
+        <button class="btn-icon modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size:0.82rem; color:var(--text-secondary);">
+          Inspect the exact system prompts, role constraints, and user prompts engineered for this generation, including injected RAG reference context.
+        </p>
+        <div class="form-group">
+          <label class="form-label">System Instruction</label>
+          <pre style="background:var(--bg-tertiary); padding:0.8rem; border-radius:var(--radius-md); font-size:0.8rem; max-height:160px; overflow-y:auto; white-space:pre-wrap;"><code id="inspectorSystemPrompt"></code></pre>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Engineered User Prompt & RAG Grounding</label>
+          <pre style="background:var(--bg-tertiary); padding:0.8rem; border-radius:var(--radius-md); font-size:0.8rem; max-height:220px; overflow-y:auto; white-space:pre-wrap;"><code id="inspectorUserPrompt"></code></pre>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm modal-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- History Modal -->
+  <div class="modal-backdrop" id="modalHistory">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2><span>🕒</span> Generation History</h2>
+        <button class="btn-icon modal-close">✕</button>
+      </div>
+      <div class="modal-body">
+        <div id="historyListContainer" style="display:flex; flex-direction:column; gap:0.5rem; max-height:360px; overflow-y:auto;">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary btn-sm modal-close">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div class="toast-container" id="toastContainer" aria-live="polite"></div>
+
+  <!-- Modular JavaScript Architecture -->
+  <script type="module" src="/static/js/app.js"></script>
+</body>
+</html>
