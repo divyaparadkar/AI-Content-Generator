@@ -69,16 +69,40 @@ cd "d:\task 3"
 pip install -r requirements.txt
 ```
 
-### 3. Launch the Application
-Start the Flask server:
+### 3. Launch the Application (Flask or Streamlit)
+
+**Option A: Modern Streamlit Studio (Recommended for Streamlit Cloud & Fast UI)**
+```bash
+streamlit run streamlit_app.py
+```
+Open your browser at `http://localhost:8501`.
+
+**Option B: Full Flask REST Server & SPA**
 ```bash
 python app.py
 ```
+Open your browser at `http://localhost:5000`.
 
-Open your browser and navigate to:
-```
-http://localhost:5000
-```
+---
+
+## ☁️ Deploy to Streamlit Cloud (streamlit.io) Directly from GitHub
+
+This repository is ready for direct deployment to [Streamlit Community Cloud](https://share.streamlit.io):
+
+1. Go to [share.streamlit.io](https://share.streamlit.io) and log in with your GitHub account (`divyaparadkar`).
+2. Click the **"New app"** or **"Create app"** button.
+3. Select your repository:
+   - **Repository:** `divyaparadkar/AI-Content-Generator`
+   - **Branch:** `main`
+   - **Main file path:** `streamlit_app.py` (or `app.py`)
+4. *(Optional)* Add API keys under **Advanced settings ➔ Secrets**:
+   ```toml
+   OPENAI_API_KEY = "sk-..."
+   GEMINI_API_KEY = "AIzaSy..."
+   HF_TOKEN = "hf_..."
+   ```
+   *Note: Even without API keys, the studio runs 100% out of the box using the built-in Offline Smart Synthesizer!*
+5. Click **Deploy!** Your app will be live on a public URL like `https://nexusai-studio.streamlit.app`.
 
 ---
 

@@ -3,6 +3,17 @@
 
 import os
 import traceback
+
+# Automatic Streamlit Cloud detection:
+# If launched via Streamlit (e.g. `streamlit run app.py`), delegate to streamlit_app
+try:
+    import streamlit as st
+    if hasattr(st, "runtime") and st.runtime.exists():
+        import streamlit_app  # noqa
+        st.stop()
+except (ImportError, ModuleNotFoundError):
+    pass
+
 from flask import Flask, request, jsonify, render_template, send_from_directory
 from werkzeug.utils import secure_filename
 
