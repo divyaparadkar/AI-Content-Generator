@@ -52,6 +52,15 @@ class JAVDecisionEngine:
         decision = self._local_system_1_evaluate(prompt, current_content_type, current_tone, has_custom_docs)
         duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
         decision["latency_ms"] = duration_ms
+
+        # Top-level shortcut keys for convenient access
+        decs = decision.get("decisions", {})
+        decision["needs_rag_grounding"] = decs.get("needs_rag", {}).get("decision", True)
+        decision["confidence"] = decs.get("needs_rag", {}).get("confidence", 0.85)
+        decision["recommended_content_type"] = decs.get("optimal_content_type", {}).get("choice", current_content_type)
+        decision["recommended_tone"] = decs.get("optimal_tone", {}).get("choice", current_tone)
+        decision["domain_complexity"] = decs.get("complexity_score", {}).get("score", 2)
+        decision["routing_strategy"] = decs.get("routing_strategy", {}).get("route", "Standard")
         return decision
 
     def _local_system_1_evaluate(

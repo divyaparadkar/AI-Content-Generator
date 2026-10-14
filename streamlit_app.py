@@ -417,8 +417,17 @@ with tab_studio:
                 current_tone=selected_tone,
                 has_custom_docs=bool(st.session_state.rag_engine.get_sources())
             )
-            rag_rec = "✅ Highly Recommended" if fast_decision["needs_rag_grounding"] else "ℹ️ Optional"
-            conf_pct = int(fast_decision["confidence"] * 100)
+            
+            # Defensive extraction supporting both top-level and nested structure
+            decs = fast_decision.get("decisions", {})
+            needs_rag = fast_decision.get("needs_rag_grounding", decs.get("needs_rag", {}).get("decision", True))
+            confidence = fast_decision.get("confidence", decs.get("needs_rag", {}).get("confidence", 0.85))
+            opt_type = fast_decision.get("recommended_content_type", decs.get("optimal_content_type", {}).get("choice", selected_ct))
+            complexity = fast_decision.get("domain_complexity", decs.get("complexity_score", {}).get("score", 2))
+            routing = fast_decision.get("routing_strategy", decs.get("routing_strategy", {}).get("route", "Standard"))
+
+            rag_rec = "✅ Highly Recommended" if needs_rag else "ℹ️ Optional"
+            conf_pct = int(confidence * 100)
 
             st.markdown(
                 f"""
@@ -433,9 +442,9 @@ with tab_studio:
                     </div>
                     <div style="margin-top:8px; font-size:0.85rem; color:#e2e8f0; display:flex; flex-wrap:wrap; gap:14px;">
                         <div><b>RAG Grounding:</b> {rag_rec} ({conf_pct}% conf)</div>
-                        <div><b>Optimal Format:</b> {fast_decision['recommended_content_type'].replace('_', ' ').title()}</div>
-                        <div><b>Complexity:</b> {fast_decision.get('domain_complexity', 0.5):.2f}</div>
-                        <div><b>Routing:</b> {fast_decision.get('routing_strategy', 'Standard')}</div>
+                        <div><b>Optimal Format:</b> {str(opt_type).replace('_', ' ').title()}</div>
+                        <div><b>Complexity:</b> {complexity}</div>
+                        <div><b>Routing:</b> {routing}</div>
                     </div>
                 </div>
                 """,
@@ -692,14 +701,15 @@ with tab_jav:
 
         j_col1, j_col2 = st.columns(2)
         with j_col1:
-            st.markdown("#### 🎯 Structured Classifications")
+            decs = decision.get("decisions", {})
             st.json({
-                "needs_rag_grounding": decision.get("needs_rag_grounding"),
-                "rag_confidence": decision.get("confidence"),
-                "recommended_content_type": decision.get("recommended_content_type"),
-                "recommended_tone": decision.get("recommended_tone"),
-                "domain_complexity": decision.get("domain_complexity"),
-                "routing_strategy": decision.get("routing_strategy")
+                "needs_rag_grounding": decision.get("needs_rag_grounding", decs.get("needs_rag", {}).get("decision")),
+                "rag_confidence": decision.get("confidence", decs.get("needs_rag", {}).get("confidence")),
+                "recommended_content_type": decision.get("recommended_content_type", decs.get("optimal_content_type", {}).get("choice")),
+                "recommended_tone": decision.get("recommended_tone", decs.get("optimal_tone", {}).get("choice")),
+                "domain_complexity": decision.get("domain_complexity", decs.get("complexity_score", {}).get("score")),
+                "routing_strategy": decision.get("routing_strategy", decs.get("routing_strategy", {}).get("route")),
+                "detailed_matrix": decs
             })
 
         with j_col2:
