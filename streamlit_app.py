@@ -113,6 +113,31 @@ code, pre {
     box-shadow: 0 12px 32px rgba(0,0,0,0.3);
 }
 
+/* Enter Arrow Button Styling */
+button[data-testid*="btn_enter_arrow"],
+div[data-testid="column"]:has(button[key="btn_enter_arrow"]) button,
+button:has(div:contains("➔")),
+button:has(p:contains("➔")) {
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%) !important;
+    border: 1px solid rgba(168, 85, 247, 0.5) !important;
+    color: #ffffff !important;
+    font-size: 1.35rem !important;
+    font-weight: 800 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4) !important;
+    transition: all 0.2s ease-in-out !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    height: 44px !important;
+}
+
+button:has(p:contains("➔")):hover,
+div[data-testid="column"]:has(button[key="btn_enter_arrow"]) button:hover {
+    transform: translateY(-2px) scale(1.04) !important;
+    box-shadow: 0 6px 20px rgba(168, 85, 247, 0.6) !important;
+}
+
 /* Hide default streamlit menu decoration */
 #MainMenu {visibility: hidden;}
 footer {visibility: hidden;}
@@ -135,6 +160,10 @@ if "last_result" not in st.session_state:
 # Active input session state defaults
 if "input_topic" not in st.session_state:
     st.session_state.input_topic = "Why Retrieval-Augmented Generation (RAG) is Replacing Pure LLM Fine-Tuning in 2026"
+if "widget_topic_input" not in st.session_state:
+    st.session_state.widget_topic_input = st.session_state.input_topic
+if "should_generate" not in st.session_state:
+    st.session_state.should_generate = False
 if "input_content_type" not in st.session_state:
     st.session_state.input_content_type = "blog_post"
 if "input_tone" not in st.session_state:
@@ -201,6 +230,7 @@ def load_preset(preset_key: str):
     p = PRESETS.get(preset_key)
     if p:
         st.session_state.input_topic = p["topic"]
+        st.session_state.widget_topic_input = p["topic"]
         st.session_state.input_content_type = p["content_type"]
         st.session_state.input_tone = p["tone"]
         st.session_state.input_length = p["length"]
@@ -343,14 +373,43 @@ with tab_studio:
     with col_input:
         st.markdown("#### 📝 Studio Prompt & Controls")
 
-        topic_input = st.text_area(
-            "Topic / Core Prompt *",
-            value=st.session_state.input_topic,
-            height=90,
-            placeholder="e.g. Why Retrieval-Augmented Generation is replacing pure LLM fine-tuning...",
-            key="widget_topic"
-        )
-        # Update session state
+        # Instant Enter Key callback
+        def on_enter_pressed():
+            st.session_state.should_generate = True
+            st.session_state.input_topic = st.session_state.widget_topic_input
+
+        # Prompt Input Row with direct Enter Arrow (➔) Button
+        col_prompt, col_arrow = st.columns([5.2, 0.8], gap="small", vertical_alignment="bottom")
+        with col_prompt:
+            topic_input = st.text_input(
+                "Topic or User Prompt * (Press Enter ↵ to Generate)",
+                key="widget_topic_input",
+                placeholder="e.g. Why Retrieval-Augmented Generation (RAG) is transforming AI in 2026...",
+                help="Type prompt here and press Enter ↵ to generate instantly, or click the Enter Arrow button ➔",
+                on_change=on_enter_pressed
+            )
+        with col_arrow:
+            arrow_clicked = st.button(
+                "➔",
+                key="btn_enter_arrow",
+                type="primary",
+                use_container_width=True,
+                help="Generate Content (Enter ↵)"
+            )
+
+        # Multi-line / Extended draft mode expander
+        with st.expander("📝 Multi-line / Long Draft Prompt Mode", expanded=False):
+            topic_multiline = st.text_area(
+                "Paste Extended Content or Multi-paragraph Prompt",
+                value=st.session_state.widget_topic_input if len(st.session_state.widget_topic_input) > 100 else "",
+                height=110,
+                placeholder="Paste full articles, long notes, or multi-paragraph instructions here...",
+                key="widget_multiline_topic"
+            )
+            if topic_multiline.strip() and topic_multiline != topic_input:
+                topic_input = topic_multiline
+                st.session_state.widget_topic_input = topic_multiline
+
         st.session_state.input_topic = topic_input
 
         row1_col1, row1_col2 = st.columns(2)
@@ -451,8 +510,12 @@ with tab_studio:
                 unsafe_allow_html=True
             )
 
-        # Primary Generate Button
-        generate_clicked = st.button("⚡ Generate High-Impact Content", type="primary", use_container_width=True)
+        # Primary Generate Button (also triggers via Enter key or Enter Arrow)
+        bottom_clicked = st.button("⚡ Generate High-Impact Content (or press Enter ↵)", type="primary", use_container_width=True)
+
+        generate_clicked = arrow_clicked or bottom_clicked or st.session_state.get("should_generate", False)
+        if st.session_state.get("should_generate"):
+            st.session_state.should_generate = False
 
         if generate_clicked:
             if not topic_input.strip():
